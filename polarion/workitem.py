@@ -536,6 +536,28 @@ class Workitem(object):
             service.updateAttachment(self.uri, id, file_name, title, file_content.read())
         self._reloadFromPolarion()
 
+    def addExternalItem(self, url, role):
+        """
+        Add an externally linked item.
+        :param url: Link to external item
+        :param role: The role to link this item with
+        :return: None
+        """
+        service = self._polarion.getService('Tracker')
+        service.addExternallyLinkedItem(self.uri, url, self._polarion.EnumOptionIdType(id=role))
+        self._reloadFromPolarion()
+
+    def removeExternalItem(self, url, role):
+        """
+        Remove an externally linked item.
+        :param url: Link to external item
+        :param role: The role to link this item with
+        :return: None
+        """
+        service = self._polarion.getService('Tracker')
+        service.removeExternallyLinkedItem(self.uri, url, self._polarion.EnumOptionIdType(id=role))
+        self._reloadFromPolarion()
+
     def save(self):
         """
         Update the workitem in polarion

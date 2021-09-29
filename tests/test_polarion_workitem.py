@@ -441,6 +441,24 @@ class TestPolarionWorkitem(unittest.TestCase):
         self.assertEqual(executed_workitem_1.resolution.id, 'incomplete', msg='Resolution not as set')
         self.assertEqual(checking_workitem_1.resolution.id, 'incomplete', msg='Resolution not as set')
 
+    def test_external_linked_item(self):
+        executed_workitem_1 = self.executing_project.createWorkitem('task')
+        role = 'relates_to'
+        url = 'subterra:data-service:objects:/default/Python${WorkItem}PYTH-1852'
+
+        executed_workitem_1.addExternalItem(url, role)
+        checking_workitem_1 = self.checking_project.getWorkitem(executed_workitem_1.id)
+
+        self.assertEqual(executed_workitem_1.externallyLinkedWorkItems.ExternallyLinkedWorkItem[0].role.id, role, msg='Role did not match set value')
+        self.assertEqual(executed_workitem_1.externallyLinkedWorkItems.ExternallyLinkedWorkItem[0].workItemURI, url, msg='Url did not match set value')
+        self.assertEqual(checking_workitem_1.externallyLinkedWorkItems.ExternallyLinkedWorkItem[0].role.id, role, msg='Role did not match set value')
+        self.assertEqual(checking_workitem_1.externallyLinkedWorkItems.ExternallyLinkedWorkItem[0].workItemURI, url, msg='Url did not match set value')
+        
+        executed_workitem_1.removeExternalItem(executed_workitem_1.externallyLinkedWorkItems.ExternallyLinkedWorkItem[0].workItemURI,
+                                                 executed_workitem_1.externallyLinkedWorkItems.ExternallyLinkedWorkItem[0].role.id)
+
+        print()
+
 
 
         

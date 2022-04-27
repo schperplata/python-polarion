@@ -1,5 +1,6 @@
 import atexit
 import re
+from typing import Any, Dict, Optional
 from urllib.parse import urljoin, urlparse
 import requests
 from zeep import Client, Transport
@@ -23,14 +24,16 @@ class Polarion(object):
 
     """
 
-    def __init__(self, polarion_url, user, password, static_service_list=False, skip_cert_verification=False, svn_repo_url=None):
+    def __init__(self, polarion_url: str, user: str, password: str,
+                 static_service_list: bool = False, skip_cert_verification: bool = False,
+                 svn_repo_url: Optional[str] = None):
         self.user = user
         self.password = password
         self.url = polarion_url
         self.skip_cert_verification = skip_cert_verification
         self.svn_repo_url = svn_repo_url
 
-        self.services = {}
+        self.services: Dict[str, Dict[str, Any]] = {}
 
         if not self.url.endswith('/'):
             self.url += '/'
@@ -138,7 +141,7 @@ class Polarion(object):
         self.ArrayOfEnumOptionIdType = self.getTypeFromService('Tracker', 'ns2:ArrayOfEnumOptionId')
         self.ArrayOfSubterraURIType = self.getTypeFromService('Tracker', 'ns1:ArrayOfSubterraURI')
 
-    def _getTransport(self):
+    def _getTransport(self) -> Transport:
         """
         Gets the zeep transport object
         """
@@ -146,7 +149,7 @@ class Polarion(object):
         transport.session.verify = not self.skip_cert_verification
         return transport
 
-    def hasService(self, name: str):
+    def hasService(self, name: str) -> bool:
         """
         Checks if a WSDL service is available
         """
@@ -154,9 +157,9 @@ class Polarion(object):
             return True
         return False
 
-    def getService(self, name: str):
+    def getService(self, name: str) -> str:
         """
-        Get a WSDL service client. The name can be 'Trakcer' or 'Session'
+        Get a WSDL service client. The name can be 'Tracker' or 'Session'
         """
         # request user info to see if we're still logged in
         try:
@@ -170,7 +173,7 @@ class Polarion(object):
         else:
             raise Exception('Service does not exsist')
 
-    def getTypeFromService(self, name: str, type_name):
+    def getTypeFromService(self, name: str, type_name: str) -> :
         """
         """
         if name in self.services:
@@ -178,7 +181,7 @@ class Polarion(object):
         else:
             raise Exception('Service does not exsist')
 
-    def getProject(self, project_id):
+    def getProject(self, project_id: str) -> Project:
         """Get a Polarion project
 
         :param project_id: The ID of the project.
@@ -187,8 +190,7 @@ class Polarion(object):
         """
         return Project(self, project_id)
 
-    def downloadFromSvn(self, url):
-
+    def downloadFromSvn(self, url) -> Optional[bytes]:
         if self.svn_repo_url is not None:
             # user specified new url to try, use that instead of the default value
             orig_url = urlparse(url)

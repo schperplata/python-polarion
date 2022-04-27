@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from mock import patch
 from polarion.utils import *
 
 

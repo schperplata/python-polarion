@@ -1,5 +1,7 @@
+from typing import Optional
 class PolarionObject(object):
-    def __init__(self, polarion, project, id=None, uri=None):
+    # TODO polarion and project types, polarion_record, circular import
+    def __init__(self, polarion, project, id: Optional[str] = None, uri: Optional[str] = None):
         self._polarion = polarion
         self._project = project
         self._id = id

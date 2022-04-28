@@ -2,6 +2,7 @@ import copy
 import os
 from datetime import datetime, date
 from enum import Enum
+from typing import Dict, List, Optional
 
 from zeep import xsd
 
@@ -9,7 +10,7 @@ from .base.comments import Comments
 from .base.custom_fields import CustomFields
 from .factory import Creator
 from .user import User
-
+from .document import Document
 
 class Workitem(CustomFields, Comments):
     """
@@ -20,9 +21,7 @@ class Workitem(CustomFields, Comments):
     :param id: Workitem ID
     :param uri: Polarion uri
     :param polarion_workitem: Polarion workitem content
-
     """
-
     class HyperlinkRoles(Enum):
         """
         Hyperlink reference type enum
@@ -30,7 +29,12 @@ class Workitem(CustomFields, Comments):
         INTERNAL_REF = 'internal reference'
         EXTERNAL_REF = 'external reference'
 
-    def __init__(self, polarion, project, id=None, uri=None, new_workitem_type=None, new_workitem_fields=None, polarion_workitem=None):
+    def __init__(self, polarion,
+                 project, id: Optional[str] = None,
+                 uri: Optional[str] = None,
+                 new_workitem_type: Optional[str] = None,
+                 new_workitem_fields: Optional[List[str]] = None,
+                 polarion_workitem: Optional["Workitem"] = None):  # TODO polarion and project types, circular import
         super().__init__(polarion, project, id, uri)
         self._polarion = polarion
         self._project = project
@@ -124,20 +128,17 @@ class Workitem(CustomFields, Comments):
         else:
             raise Exception(f'Workitem not retrieved from Polarion')
 
-    def getAuthor(self):
-        """
-        Get the author of the workitem
+    def getAuthor(self) -> User:
+        """Get the author of the workitem
 
         :return: Author
-        :rtype: User
         """
         if self.author is not None:
             return User(self._polarion, self.author)
         return None
 
     def removeApprovee(self, user: User):
-        """
-        Remove a user from the approvers
+        """Remove a user from the approvers
 
         :param user: The user object to remove
         """
@@ -145,9 +146,8 @@ class Workitem(CustomFields, Comments):
         service.removeApprovee(self.uri, user.id)
         self._reloadFromPolarion()
 
-    def addApprovee(self, user: User, remove_others=False):
-        """
-        Adds a user as approvee
+    def addApprovee(self, user: User, remove_others: bool = False):
+        """Adds a user as approver
 
         :param user: The user object to add
         :param remove_others: Set to True to make the new user the only approver user.
@@ -162,12 +162,10 @@ class Workitem(CustomFields, Comments):
         service.addApprovee(self.uri, user.id)
         self._reloadFromPolarion()
 
-    def getApproverUsers(self):
-        """
-        Get an array of approval users
+    def getApproverUsers(self) -> List[User]:
+        """Get an array of approval users
 
         :return: An array of User objects
-        :rtype: User[]
         """
         assigned_users = []
         if self.approvals is not None:
@@ -175,12 +173,10 @@ class Workitem(CustomFields, Comments):
                 assigned_users.append(User(self._polarion, approval.user))
         return assigned_users
 
-    def getAssignedUsers(self):
-        """
-        Get an array of assigned users
+    def getAssignedUsers(self) -> List[User]:
+        """Get an array of assigned users
 
         :return: An array of User objects
-        :rtype: User[]
         """
         assigned_users = []
         if self.assignee is not None:
@@ -189,8 +185,7 @@ class Workitem(CustomFields, Comments):
         return assigned_users
 
     def removeAssignee(self, user: User):
-        """
-        Remove a user from the assignees
+        """Remove a user from the assignees
 
         :param user: The user object to remove
         """
@@ -198,9 +193,8 @@ class Workitem(CustomFields, Comments):
         service.removeAssignee(self.uri, user.id)
         self._reloadFromPolarion()
 
-    def addAssignee(self, user: User, remove_others=False):
-        """
-        Adds a user as assignee
+    def addAssignee(self, user: User, remove_others: bool=False):
+        """Adds a user as assignee
 
         :param user: The user object to add
         :param remove_others: Set to True to make the new user the only assigned user.
@@ -215,13 +209,11 @@ class Workitem(CustomFields, Comments):
         service.addAssignee(self.uri, user.id)
         self._reloadFromPolarion()
 
-    def getStatusEnum(self):
-        """
-        tries to get the status enum of this workitem type
+    def getStatusEnum(self) -> List[str]: # TODO is this type correct?
+        """Try to get the status enum of this workitem type
         When it fails to get it, the list will be empty
 
         :return: An array of strings of the statusses
-        :rtype: string[]
         """
         try:
             enum = self._project.getEnum(f'{self.type.id}-status')
@@ -229,13 +221,11 @@ class Workitem(CustomFields, Comments):
         except Exception:
             return []
 
-    def getResolutionEnum(self):
-        """
-        tries to get the resolution enum of this workitem type
+    def getResolutionEnum(self) -> List[str]: # TODO is this type correct?
+        """Try to get the resolution enum of this workitem type
         When it fails to get it, the list will be empty
 
         :return: An array of strings of the resolutions
-        :rtype: string[]
         """
         try:
             enum = self._project.getEnum(f'{self.type.id}-resolution')
@@ -243,13 +233,11 @@ class Workitem(CustomFields, Comments):
         except Exception:
             return []
 
-    def getSeverityEnum(self):
-        """
-        tries to get the severity enum of this workitem type
+    def getSeverityEnum(self) -> List[str]: # TODO is this type correct?
+        """Try to get the severity enum of this workitem type
         When it fails to get it, the list will be empty
 
         :return: An array of strings of the severities
-        :rtype: string[]
         """
         try:
             enum = self._project.getEnum(f'{self.type.id}-severity')
@@ -257,12 +245,10 @@ class Workitem(CustomFields, Comments):
         except Exception:
             return []
 
-    def getAllowedCustomKeys(self):
-        """
-        Gets the list of keys that the workitem is allowed to have.
+    def getAllowedCustomKeys(self) -> List[str]:
+        """Gets the list of keys that the workitem is allowed to have.
 
         :return: An array of strings of the keys
-        :rtype: string[]
         """
         try:
             service = self._polarion.getService('Tracker')
@@ -270,21 +256,17 @@ class Workitem(CustomFields, Comments):
         except Exception:
             return []
 
-    def isCustomFieldAllowed(self, key):
-        """
-        Checks if the custom field of a given key is allowed.
+    def isCustomFieldAllowed(self, key: str) -> bool:
+        """Checks if the custom field of a given key is allowed.
 
-        :return: If the field is allowed
-        :rtype: bool
+        :return: Trye/False if the field is allowed/forbidden
         """
         return key in self.getAllowedCustomKeys()
 
-    def getAvailableStatus(self):
-        """
-        Get all available status option for this workitem
+    def getAvailableStatus(self) -> List[str]:
+        """Get all available status option for this workitem
 
         :return: An array of string of the statusses
-        :rtype: string[]
         """
         available_status = []
         service = self._polarion.getService('Tracker')
@@ -293,12 +275,10 @@ class Workitem(CustomFields, Comments):
             available_status.append(status.id)
         return available_status
 
-    def getAvailableActionsDetails(self):
-        """
-        Get all actions option for this workitem with details
+    def getAvailableActionsDetails(self) -> List[str]: # TODO value type?
+        """Get all actions option for this workitem with details
 
         :return: An array of dictionaries of the actions
-        :rtype: dict[]
         """
         available_actions = []
         service = self._polarion.getService('Tracker')
@@ -307,12 +287,10 @@ class Workitem(CustomFields, Comments):
             available_actions.append(action)
         return available_actions
 
-    def getAvailableActions(self):
-        """
-        Get all actions option for this workitem without details
+    def getAvailableActions(self) -> List[str]:
+        """Get all actions option for this workitem without details
 
         :return: An array of strings of the actions
-        :rtype: string[]
         """
         available_actions = []
         service = self._polarion.getService('Tracker')
@@ -321,9 +299,8 @@ class Workitem(CustomFields, Comments):
             available_actions.append(action.nativeActionId)
         return available_actions
 
-    def performAction(self, action_name):
-        """
-        Perform selected action. An exception will be thrown if some prerequisite is not set.
+    def performAction(self, action_name: str):
+        """Perform selected action. An exception will be thrown if some prerequisite is not set.
 
         :param action_name: string containing the action name
         """
@@ -335,17 +312,15 @@ class Workitem(CustomFields, Comments):
                 service.performWorkflowAction(self.uri, action.actionId)
 
     def performActionId(self, actionId: int):
-        """
-        Perform selected action. An exception will be thrown if some prerequisite is not set.
+        """Perform selected action. An exception will be thrown if some prerequisite is not set.
 
         :param actionId: number for the action to perform
         """
         service = self._polarion.getService('Tracker')
         service.performWorkflowAction(self.uri, actionId)
 
-    def setStatus(self, status):
-        """
-        Sets the status opf the workitem and saves the workitem, not respecting any project configured limits or requirements.
+    def setStatus(self, status: str):
+        """Sets the status opf the workitem and saves the workitem, not respecting any project configured limits or requirements.
 
         :param status: name of the status
         """
@@ -353,20 +328,17 @@ class Workitem(CustomFields, Comments):
             self.status.id = status
             self.save()
 
-    def getDescription(self):
-        """
-        Get a comment if available. The comment may contain HTML if edited in Polarion!
+    def getDescription(self) -> str:
+        """Get a comment if available. The comment may contain HTML if edited in Polarion!
 
         :return: The content of the description, may contain HTML
-        :rtype: string
         """
         if self.description is not None:
             return self.description.content
         return None
 
-    def setDescription(self, description):
-        """
-        Sets the description and saves the workitem
+    def setDescription(self, description: str):
+        """Sets the description and saves the workitem
 
         :param description: the description
         """
@@ -374,13 +346,11 @@ class Workitem(CustomFields, Comments):
             content=description, type='text/html', contentLossy=False)
         self.save()
 
-    def setResolution(self, resolution):
-        """
-        Sets the resolution and saves the workitem
+    def setResolution(self, resolution: str):
+        """Sets the resolution and saves the workitem
 
         :param resolution: the resolution
         """
-
         if self.resolution is not None:
             self.resolution.id = resolution
         else:
@@ -388,20 +358,17 @@ class Workitem(CustomFields, Comments):
                 id=resolution)
         self.save()
 
-    def hasTestSteps(self):
-        """
-        Checks if the workitem has test steps
+    def hasTestSteps(self) -> bool:
+        """Checks if the workitem has test steps
 
         :return: True/False
-        :rtype: boolean
         """
         if self._parsed_test_steps is not None:
             return len(self._parsed_test_steps) > 0
         return False
 
-    def addHyperlink(self, url, hyperlink_type: HyperlinkRoles):
-        """
-        Adds a hyperlink to the workitem.
+    def addHyperlink(self, url: str, hyperlink_type: HyperlinkRoles):
+        """Adds a hyperlink to the workitem.
 
         :param url: The URL to add
         :param hyperlink_type: Select internal or external hyperlink
@@ -410,27 +377,23 @@ class Workitem(CustomFields, Comments):
         service.addHyperlink(self.uri, url, {'id': hyperlink_type.value})
         self._reloadFromPolarion()
 
-    def addLinkedItem(self, workitem, link_type):
-        """
-            Add a link to a workitem
+    def addLinkedItem(self, workitem: "Workitem", link_type: str):
+        """Add a link to a workitem
 
-            :param workitem: A workitem
-            :param link_type: The link type
+        :param workitem: A workitem
+        :param link_type: The link type
         """
-
         service = self._polarion.getService('Tracker')
         service.addLinkedItem(self.uri, workitem.uri, role={'id': link_type})
         self._reloadFromPolarion()
         workitem._reloadFromPolarion()
 
-    def removeLinkedItem(self, workitem, role=None):
-        """
-        Remove the workitem from the linked items list. If the role is specified, the specified link will be removed.
+    def removeLinkedItem(self, workitem: "WorkItem", role:Optional[str]=None):
+        """Remove the workitem from the linked items list. If the role is specified, the specified link will be removed.
         If not specified, all links with the workitem will be removed
 
         :param workitem: Workitem to be removed
         :param role: the role to remove
-        :return: None
         """
         service = self._polarion.getService('Tracker')
         if role is not None:
@@ -447,31 +410,26 @@ class Workitem(CustomFields, Comments):
         self._reloadFromPolarion()
         workitem._reloadFromPolarion()
 
-    def hasAttachment(self):
-        """
-        Checks if the workitem has attachments
+    def hasAttachment(self) -> bool:
+        """Checks if the workitem has attachments
 
         :return: True/False
-        :rtype: boolean
         """
         if self.attachments is not None:
             return True
         return False
 
-    def getAttachment(self, id):
-        """
-        Get the attachment data
+    def getAttachment(self, id: str) -> List[bytes]: # TODO List[bytes] or bytearray?
+        """Get the attachment data
 
         :param id: The attachment id
         :return: list of bytes
-        :rtype: bytes[]
         """
         service = self._polarion.getService('Tracker')
         return service.getAttachment(self.uri, id)
 
-    def saveAttachmentAsFile(self, id, file_path):
-        """
-        Save an attachment to file.
+    def saveAttachmentAsFile(self, id: str, file_path: str):
+        """Save an attachment to file.
 
         :param id: The attachment id
         :param file_path: File where to save the attachment
@@ -480,9 +438,8 @@ class Workitem(CustomFields, Comments):
         with open(file_path, "wb") as file:
             file.write(bin)
 
-    def deleteAttachment(self, id):
-        """
-        Delete an attachment.
+    def deleteAttachment(self, id: str):
+        """Delete an attachment.
 
         :param id: The attachment id
         """
@@ -490,9 +447,8 @@ class Workitem(CustomFields, Comments):
         service.deleteAttachment(self.uri, id)
         self._reloadFromPolarion()
 
-    def addAttachment(self, file_path, title):
-        """
-        Upload an attachment
+    def addAttachment(self, file_path: str, title: str):
+        """Upload an attachment
 
         :param file_path: Source file to upload
         :param title: The title of the attachment
@@ -503,7 +459,7 @@ class Workitem(CustomFields, Comments):
             service.createAttachment(self.uri, file_name, title, file_content.read())
         self._reloadFromPolarion()
 
-    def updateAttachment(self, id, file_path, title):
+    def updateAttachment(self, id: str, file_path: str, title: str):
         """
         Upload an attachment
 
@@ -518,15 +474,12 @@ class Workitem(CustomFields, Comments):
         self._reloadFromPolarion()
 
     def delete(self):
-        """
-        Delete the work item in polarion
-        """
+        """Delete the work item in polarion"""
         service = self._polarion.getService('Tracker')
         service.deleteWorkItem(self.uri)
 
-    def moveToDocument(self, document, parent):
-        """
-        Move the work item into a document as a child of another workitem
+    def moveToDocument(self, document: Document, parent: Optional["WorkItem"]):
+        """Move the work item into a document as a child of another workitem
 
         :param document: Target document
         :param parent: Parent workitem, None if it shall be placed as top item
@@ -536,9 +489,7 @@ class Workitem(CustomFields, Comments):
                                        False)
 
     def save(self):
-        """
-        Update the workitem in polarion
-        """
+        """Update the workitem in polarion"""
         updated_item = {}
 
         for attr, value in self._polarion_item.__dict__.items():
@@ -567,7 +518,7 @@ class Workitem(CustomFields, Comments):
             return False
         return self._compareType(a, b)
 
-    def _compareType(self, a, b):
+    def _compareType(self, a, b) -> bool:
         basic_types = [int, float,
                        bool, type(None), str, datetime, date]
 
@@ -604,5 +555,5 @@ class Workitem(CustomFields, Comments):
 
 
 class WorkitemCreator(Creator):
-    def createFromUri(self, polarion, project, uri):
+    def createFromUri(self, polarion, project, uri: str) -> Workitem: # TODO polarion and project types, circular import
         return Workitem(polarion, project, None, uri)

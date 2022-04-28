@@ -1,14 +1,14 @@
 from abc import ABC
+from typing import Optional
 
 from polarion.base.polarion_object import PolarionObject
 
 
 class Comments(PolarionObject, ABC):
 
-    def addComment(self, title, comment, parent=None):
-        """
-        Adds a comment to the workitem.
-
+    # TODO comment type?
+    def addComment(self, title: str, comment: str, parent: Optional["Comment"] = None):
+        """Adds a comment to the workitem.
         Throws an exception if the function is disabled in Polarion.
 
         :param title: Title of the comment (will be None for a reply)

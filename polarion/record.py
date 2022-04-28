@@ -1,18 +1,20 @@
-from enum import Enum
-from .factory import createFromUri
 import os
-import requests
+from enum import Enum
+from typing import List, Optional
+
+
+from .factory import createFromUri
+from .testrun import Testrun
+from .record import Record
 
 
 class Record(object):
-    """
-    Create a Polarion test record,
+    """ Create a Polarion test record,
 
     :param polarion: Polarion client object
     :param test_run: Test run instance
     :param polarion_record: The data from Polarion of this testrun
     :param index: The index of this record in the test run
-
     """
     class ResultType(Enum):
         """
@@ -23,7 +25,8 @@ class Record(object):
         FAILED = 'failed'
         BLOCKED = 'blocked'
 
-    def __init__(self, polarion, test_run, polarion_record, index):
+    # TODO polarion and polarion_record, circular import
+    def __init__(self, polarion, test_run: Testrun, polarion_record: Record, index: int):
         self._polarion = polarion
         self._test_run = test_run
         self._polarion_record = polarion_record
@@ -43,13 +46,14 @@ class Record(object):
 
     def _reloadFromPolarion(self):
         service = self._polarion.getService('TestManagement')
-        self._polarion_record = service.getTestCaseRecords(self._test_run.uri, self._testcase)[0]
+        self._polarion_record = service.getTestCaseRecords(
+            self._test_run.uri, self._testcase)[0]
         self._buildWorkitemFromPolarion()
         # self._original_polarion_test_run = copy.deepcopy(self._polarion_test_run)
 
-    def setTestStepResult(self, step_number, result: ResultType, comment=None):
-        """"
-        Set the result of a test step
+    # TODO step_number type
+    def setTestStepResult(self, step_number: int, result: ResultType, comment: Optional[str] = None):
+        """"Set the result of a test step
 
         :param step_number: Step number
         :param result: The result fo the test step
@@ -76,47 +80,38 @@ class Record(object):
 
         self.save()
 
-    def getResult(self):
-        """
-        Get the test result of this record
+    def getResult(self) -> ResultType:
+        """Get the test result of this record
 
         :return: The test case result
-        :rtype: ResultType
         """
         if self.result is not None:
             return self.ResultType(self.result.id)
         return self.ResultType.No
 
-    def getComment(self):
-        """
-        Get a comment if available. The comment may contain HTML if edited in Polarion!
+    def getComment(self) -> Optional[str]:
+        """Get a comment if available. The comment may contain HTML if edited in Polarion!
 
         :return: Get the comment, may contain HTML
-        :rtype: string
         """
         if self.comment is not None:
             return self.comment.content
         return None
 
     @property
-    def testcase_id(self):
-        """
-        The test case name including prefix
-        """
+    def testcase_id(self) -> str:
+        """ The test case name including prefix"""
         return self._testcase_name
 
-    def getTestCaseName(self):
-        """
-        Get the test case name including prefix
+    def getTestCaseName(self) -> str:
+        """Get the test case name including prefix
 
         :return: The name
-        :rtype: string
         """
         return self._testcase_name
 
-    def setComment(self, comment):
-        """
-        tries to get the severity enum of this workitem type
+    def setComment(self, comment: str):
+        """Try to get the severity enum of this workitem type.
         When it fails to get it, the list will be empty
 
         :param comment: Comment string, may contain HTML
@@ -124,9 +119,8 @@ class Record(object):
         self.comment = self._polarion.TextType(
             content=comment, type='text/html', contentLossy=False)
 
-    def setResult(self, result: ResultType = ResultType.FAILED, comment=None):
-        """
-        Set the result of this record and save it.
+    def setResult(self, result: ResultType = ResultType.FAILED, comment: Optional[str] = None):
+        """Set the result of this record and save it.
 
         :param result: The result of this record
         :param comment: Comment string, may contain HTML
@@ -140,35 +134,30 @@ class Record(object):
                 id=result.value)
         self.save()
 
-    def getExecutingUser(self):
-        """
-        Gets the executing user if the test was executed
+    def getExecutingUser(self) -> Optional[str]:
+        """Gets the executing user if the test was executed
 
         :return: The user
-        :rtype: User/None
         """
         if self.executedByURI is not None:
             return createFromUri(self._polarion, None, self.executedByURI)
         return None
 
-    def hasAttachment(self):
-        """
-        Checks if the Record has attachments
+    def hasAttachment(self) -> bool:
+        """Checks if the Record has attachments
 
         :return: True/False
-        :rtype: boolean
         """
         if self.attachments is not None:
             return True
         return False
-    
-    def getAttachment(self, file_name):
-        """
-        Get the attachment data
+
+    # TODO  List[bytes] or bytearray?
+    def getAttachment(self, file_name: str) -> List[bytes]:
+        """Get the attachment data
 
         :param file_name: The attachment file name
         :return: list of bytes
-        :rtype: bytes[]
         """
         # find the file
         url = None
@@ -181,9 +170,8 @@ class Record(object):
         else:
             raise Exception(f'Could not find attachment with name {file_name}')
 
-    def saveAttachmentAsFile(self, file_name, file_path):
-        """
-        Save an attachment to file.
+    def saveAttachmentAsFile(self, file_name: str, file_path: str):
+        """Save an attachment to file.
 
         :param file_name: The attachment file name
         :param file_path: File where to save the attachment
@@ -192,17 +180,17 @@ class Record(object):
         with open(file_path, "wb") as file:
             file.write(bin)
 
-    def deleteAttachment(self, file_name):
-        """
-        Delete an attachment.
+    def deleteAttachment(self, file_name: str):
+        """Delete an attachment.
 
         :param file_name: The attachment file name
         """
         service = self._polarion.getService('TestManagement')
-        service.deleteAttachmentFromTestRecord(self._test_run.uri, self._index, file_name)
+        service.deleteAttachmentFromTestRecord(
+            self._test_run.uri, self._index, file_name)
         self._reloadFromPolarion()
 
-    def addAttachment(self, file_path, title):
+    def addAttachment(self, file_path: str, title: str):
         """
         Upload an attachment
 
@@ -212,31 +200,29 @@ class Record(object):
         service = self._polarion.getService('TestManagement')
         file_name = os.path.split(file_path)[1]
         with open(file_path, "rb") as file_content:
-            service.addAttachmentToTestRecord(self._test_run.uri, self._index, file_name, title, file_content.read())
+            service.addAttachmentToTestRecord(
+                self._test_run.uri, self._index, file_name, title, file_content.read())
         self._reloadFromPolarion()
 
-    def testStepHasAttachment(self, step_index):
-        """
-        Checks if the a test step has attachments
+    def testStepHasAttachment(self, step_index: int) -> bool:
+        """Checks if the a test step has attachments
 
         :param step_index: The test step index
         :return: True/False
-        :rtype: boolean
         """
         if self.testStepResults is None:
             return False
         if self.testStepResults.TestStepResult[step_index].attachments is not None:
             return True
         return False
-    
-    def getAttachmentFromTestStep(self, step_index, file_name):
-        """
-        Get the attachment data from a test step
+
+    # TODO List[bytes] or bytearray
+    def getAttachmentFromTestStep(self, step_index: int, file_name: str) -> List[bytes]:
+        """Get the attachment data from a test step
 
         :param step_index: The test step index
         :param file_name: The attachment file name
         :return: list of bytes
-        :rtype: bytes[]
         """
         # find the file
         url = None
@@ -249,9 +235,8 @@ class Record(object):
         else:
             raise Exception(f'Could not find attachment with name {file_name}')
 
-    def saveAttachmentFromTestStepAsFile(self, step_index, file_name, file_path):
-        """
-        Save an attachment to file from a test step
+    def saveAttachmentFromTestStepAsFile(self, step_index: int, file_name: str, file_path: str):
+        """Save an attachment to file from a test step
 
         :param step_index: The test step index
         :param file_name: The attachment file name
@@ -261,20 +246,19 @@ class Record(object):
         with open(file_path, "wb") as file:
             file.write(bin)
 
-    def deleteAttachmentFromTestStep(self, step_index, file_name):
-        """
-        Delete an attachment from a test step
+    def deleteAttachmentFromTestStep(self, step_index: int, file_name: str):
+        """Delete an attachment from a test step
 
         :param step_index: The test step index
         :param file_name: The attachment file name
         """
         service = self._polarion.getService('TestManagement')
-        service.deleteAttachmentFromTestStep(self._test_run.uri, self._index, step_index, file_name)
+        service.deleteAttachmentFromTestStep(
+            self._test_run.uri, self._index, step_index, file_name)
         self._reloadFromPolarion()
 
-    def addAttachmentToTestStep(self, step_index, file_path, title):
-        """
-        Upload an attachment to a test step
+    def addAttachmentToTestStep(self, step_index: int, file_path: str, title: str):
+        """Upload an attachment to a test step
 
         :param step_index: The test step index
         :param file_path: Source file to upload
@@ -283,13 +267,12 @@ class Record(object):
         service = self._polarion.getService('TestManagement')
         file_name = os.path.split(file_path)[1]
         with open(file_path, "rb") as file_content:
-            service.addAttachmentToTestStep(self._test_run.uri, self._index, step_index, file_name, title, file_content.read())
+            service.addAttachmentToTestStep(
+                self._test_run.uri, self._index, step_index, file_name, title, file_content.read())
         self._reloadFromPolarion()
 
     def save(self):
-        """
-        Saves the current test record
-        """
+        """Saves the current test record"""
         new_item = {}
         for attr, value in self.__dict__.items():
             if not attr.startswith('_'):

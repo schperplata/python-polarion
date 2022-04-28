@@ -1,17 +1,19 @@
 from abc import ABC
+from typing import Optional
 
 from polarion.base.polarion_object import PolarionObject
 
 
 class CustomFields(PolarionObject, ABC):
-    def __init__(self, polarion, project, _id=None, uri=None):
+    # TODO polarion and project types, circular import
+    def __init__(self, polarion, project, _id: Optional[str] = None, uri: Optional[str] = None):
         super().__init__(polarion, project, _id, uri)
         self.customFields = None
 
-    def isCustomFieldAllowed(self, key):
+    def isCustomFieldAllowed(self, key: str) -> bool:
         raise NotImplementedError
 
-    def setCustomField(self, key, value):
+    def setCustomField(self, key: str, value: str):
         """
         Set the custom field 'key' to the value
         :param key: custom field key

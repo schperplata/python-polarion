@@ -1,5 +1,6 @@
 import re
 from abc import ABC, abstractmethod
+from typing import Dict
 
 
 class Creator(ABC):
@@ -10,14 +11,15 @@ class Creator(ABC):
         pass
 
 
-creator_list = {}
+creator_list: Dict[str, Creator] = {}  # TODO is this true?
 
 
-def addCreator(type_name, creator):
+def addCreator(type_name, creator) -> Creator:
     creator_list[type_name] = creator
 
 
-def createFromUri(polarion, project, uri):
+# TODO polarion and project types, circular import
+def createFromUri(polarion, project, uri: str):
     type_name = _subterraUrl(uri)
     if type_name in creator_list:
         creator = creator_list[type_name]()
@@ -26,7 +28,7 @@ def createFromUri(polarion, project, uri):
         raise Exception(f'type {type_name} not supported')
 
 
-def _subterraUrl(uri):
+def _subterraUrl(uri: str) -> str:
     uri_parts = uri.split(':')
     if uri_parts[0] != 'subterra':
         raise Exception(f'Not a subterra uri: {uri}')

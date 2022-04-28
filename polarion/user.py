@@ -2,15 +2,14 @@ from .factory import Creator
 
 
 class User(object):
-    """
-    A polarion user
+    """A polarion user
 
     :param polarion: Polarion client object
     :param polarion_record: The user record
-
     """
 
-    def __init__(self, polarion, polarion_record=None, uri=None):
+    # TODO polarion and polarion_record, circular import
+    def __init__(self, polarion, polarion_record=None, uri: str = None):
         self._polarion = polarion
         self._polarion_record = polarion_record
         self._uri = uri
@@ -40,5 +39,6 @@ class User(object):
 
 
 class UserCreator(Creator):
-    def createFromUri(self, polarion, project, uri):
+    # TODO polarion and project types,circular import
+    def createFromUri(self, polarion, project, uri: str) -> User:
         return User(polarion, None, uri)

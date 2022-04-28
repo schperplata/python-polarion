@@ -1,15 +1,15 @@
 import copy
 import os
-import requests
-from zeep import xsd
+from typing import List, Optional
+
 from .base.comments import Comments
 from .record import Record
 from .factory import Creator
+from .workitem import Workitem
 
 
 class Testrun(Comments):
-    """
-    Create a Polarion testrun object from uri or directly with Polarion content
+    """Create a Polarion testrun object from uri or directly with Polarion content
 
     :param polarion: Polarion client object
     :param uri: Polarion uri
@@ -18,7 +18,7 @@ class Testrun(Comments):
     :ivar records: An array of :class:`.Record`
     """
 
-    def __init__(self, polarion, uri=None, polarion_test_run=None):
+    def __init__(self, polarion, uri: Optional[str] = None, polarion_test_run: Optional["Testrun"] = None):
         super().__init__(polarion, None, None, uri)
 
         if uri is not None:
@@ -64,46 +64,38 @@ class Testrun(Comments):
         self._buildWorkitemFromPolarion()
         self._original_polarion_test_run = copy.deepcopy(self._polarion_test_run)
 
-    def hasTestCase(self, id):
-        """
-        Checks if the the specified test case id is in the records.
+    def hasTestCase(self, id: str) -> bool:
+        """Checks if the the specified test case id is in the records.
 
         :return: True/False
-        :rtype: boolean
         """
         if id in self._record_dict:
             return True
         return False
 
-    def getTestCase(self, id):
-        """
-        Get the specified test case record from the test run records
+    def getTestCase(self, id: str) -> Record:
+        """Get the specified test case record from the test run records
 
-        :return: Specified record fi ti exists
-        :rtype: Record
+        :return: Specified record if it exists.
         """
         if self.hasTestCase(id):
             return self._record_dict[id]
         return None
 
-    def hasAttachment(self):
-        """
-        Checks if the test run has attachments
+    def hasAttachment(self) -> bool:
+        """Checks if the test run has attachments
 
         :return: True/False
-        :rtype: boolean
         """
         if self.attachments is not None:
             return True
         return False
 
-    def getAttachment(self, file_name):
-        """
-        Get the attachment data
+    # TODO List[bytes] or bytearray
+    def getAttachment(self, file_name: str) -> List[bytes]:
+        """Get the attachment data
 
         :param file_name: The attachment file name
-        :return: list of bytes
-        :rtype: bytes[]
         """
         service = self._polarion.getService('TestManagement')
         at = service.getTestRunAttachment(self.uri, file_name)
@@ -112,9 +104,8 @@ class Testrun(Comments):
             return self._polarion.downloadFromSvn(at.url)
         raise Exception(f'Could not download attachment {file_name}')
 
-    def saveAttachmentAsFile(self, file_name, file_path):
-        """
-        Save an attachment to file.
+    def saveAttachmentAsFile(self, file_name: str, file_path: str):
+        """Save an attachment to file.
 
         :param file_name: The attachment file name
         :param file_path: File where to save the attachment
@@ -123,9 +114,8 @@ class Testrun(Comments):
         with open(file_path, "wb") as file:
             file.write(bin)
 
-    def deleteAttachment(self, file_name):
-        """
-        Delete an attachment.
+    def deleteAttachment(self, file_name: str):
+        """Delete an attachment.
 
         :param file_name: The attachment file name
         """
@@ -133,7 +123,7 @@ class Testrun(Comments):
         service.deleteTestRunAttachment(self.uri, file_name)
         self._reloadFromPolarion()
 
-    def addAttachment(self, file_path, title):
+    def addAttachment(self, file_path: str, title: str):
         """
         Upload an attachment
 
@@ -146,9 +136,9 @@ class Testrun(Comments):
             service.addAttachmentToTestRun(self.uri, file_name, title, file_content.read())
         self._reloadFromPolarion()
 
-    def addTestcase(self, workitem):
-        """
-        Add a workitem to the test run. A test case cannot be added to a template.
+    def addTestcase(self, workitem: Workitem):
+        """Add a workitem to the test run. A test case cannot be added to a template.
+
         :param workitem: Workitem object
         """
         service = self._polarion.getService('TestManagement')
@@ -156,9 +146,8 @@ class Testrun(Comments):
         service.addTestRecordToTestRun(self.uri, new_record)
         self._reloadFromPolarion()
 
-    def updateAttachment(self, file_path, title):
-        """
-        Upload an attachment
+    def updateAttachment(self, file_path: str, title: str):
+        """Upload an attachment
 
         :param file_path: Source file to upload
         :param title: The title of the attachment
@@ -170,9 +159,7 @@ class Testrun(Comments):
         self._reloadFromPolarion()
 
     def save(self):
-        """
-        Update the testrun in polarion
-        """
+        """Update the testrun in polarion"""
         updated_item = {}
         skip = ['records']
 
@@ -198,5 +185,6 @@ class Testrun(Comments):
 
 
 class TestrunCreator(Creator):
-    def createFromUri(self, polarion, project, uri):
+    # TODO polarion and project types, circular import
+    def createFromUri(self, polarion, project, uri: str) -> Testrun:
         return Testrun(polarion, uri)

@@ -8,14 +8,13 @@ from typing import Dict, List, Optional
 
 
 class Project(object):
-    """
-    A Polarion project instance usable to access workitem, testruns and more. usually create by using the Polarion client.
+    """A Polarion project instance usable to access workitem, testruns and more. usually create by using the Polarion client.
 
     :param polarion: The polarion client instance
     :param project_id: The project id, as can be found in the URL of the project
     """
 
-    def __init__(self, polarion, project_id: str):
+    def __init__(self, polarion, project_id: str):  # TODO polarion, circular import
         self.polarion = polarion
         self.id = project_id
 

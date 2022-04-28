@@ -1,13 +1,16 @@
 import copy
+from typing import List, Optional
 
 from zeep import xsd
 
 from .base.custom_fields import CustomFields
 from .factory import createFromUri, Creator
 
+from .workitem import Workitem
+from .document import Document
 
 class Document(CustomFields):
-    def __init__(self, polarion, project, uri=None, location=None):
+    def __init__(self, polarion, project, uri: Optional[str] = None, location: Optional[str] = None): # TODO polarion and project types, circular import
         """
         Create a Document.
         :param polarion: Polarion client object
@@ -49,20 +52,16 @@ class Document(CustomFields):
         self._polarion_document = service.getModuleByUri(self._uri)
         self._buildFromPolarion()
 
-    def getWorkitemUris(self):
-        """
-        Get the uris of all workitems in the document.
-        :return: string[]
-        """
+    def getWorkitemUris(self) -> List[str]:  # TODO str?
+        """Get the uris of all workitems in the document."""
         service = self._polarion.getService('Tracker')
         workitems = service.getModuleWorkItemUris(self._uri, None, True)
         return workitems
 
-    def getWorkitems(self):
-        """
-        Get all complete workitems.
+    def getWorkitems(self) -> List[WorkItem]:
+        """Get all complete workitems.
+
         That may take some time on a large document.
-        :return: Workitem[]
         """
         workitems = []
         workitem_uris = self.getWorkitemUris()
@@ -70,16 +69,12 @@ class Document(CustomFields):
             workitems.append(createFromUri(self._polarion, self._project, workitem_uri))
         return workitems
 
-    def getTopLevelWorkitem(self):
-        """
-        Get the top level workitem, which is usually the title.
-        :return: Workitem
-        """
+    def getTopLevelWorkitem(self) -> Workitem:
+        """Get the top level workitem, which is usually the title."""
         return createFromUri(self._polarion, self._project, self.getWorkitemUris()[0])
 
-    def getChildren(self, workitem):
-        """
-        Gets the children of a workitem in the document.
+    def getChildren(self, workitem: Workitem) -> List[Workitem]:
+        """Gets the children of a workitem in the document.
 
         :param workitem: Workitem to get children for
         :return: List of workitems
@@ -93,9 +88,8 @@ class Document(CustomFields):
                 workitem_children.append(createFromUri(self._polarion, self._project, child.workItemURI))
         return workitem_children
 
-    def getParent(self, workitem):
-        """
-        Gets the parent of a workitem in the document.
+    def getParent(self, workitem: Workitem) -> Optional[Workitem]:
+        """Gets the parent of a workitem in the document.
 
         :param workitem: Workitem to get parent for
         :return: Parent workitem, None if no parent
@@ -108,9 +102,9 @@ class Document(CustomFields):
             parent = createFromUri(self._polarion, self._project, parent_uri.workItemURI)
         return parent
 
-    def addHeading(self, title, parent_workitem=None):
-        """
-        Adds a heading to a document
+    # TODO heading type?
+    def addHeading(self, title: str, parent_workitem: Optional[Workitem] = None):
+        """ Adds a heading to a document
 
         :param title: Title of the heading
         :param parent_workitem: Parent workitem in the document hierarchy, set to None to create it on top level
@@ -122,21 +116,17 @@ class Document(CustomFields):
         heading.moveToDocument(self, parent_workitem)
         return heading
 
-    def isCustomFieldAllowed(self, _):
-        """
-        Checks if the custom field of a given key is allowed.
-
+    def isCustomFieldAllowed(self, _) -> bool:
+        """Checks if the custom field of a given key is allowed.
         The Polarion interface to get allowed custom fields only supports work items.
 
         :return: If the field is allowed
-        :rtype: bool
         """
         return True
 
-    def reuse(self, target_project_id, target_location, target_name, target_title, link_role='derived_from',
-              derived_fields=None):
-        """
-        Reuse this document in a different project.
+    def reuse(self, target_project_id: str, target_location: str, target_name: str, target_title: str, link_role: str = 'derived_from',
+              derived_fields: Optional[List[str]] = None) -> Document  # TODO return type == Document?
+        """Reuse this document in a different project.
 
         :param target_project_id: The target project id
         :param target_location: Location of the target document
@@ -153,7 +143,7 @@ class Document(CustomFields):
                                         link_role, derived_fields)
         return createFromUri(self._polarion, self._project, new_uri)
 
-    def update(self, revision=None, auto_suspect=False):
+    def update(self, revision:Optional[int]=None, auto_suspect: bool=False):
         """
         Update a reused document to a revision of the source document.
 
@@ -196,5 +186,5 @@ class Document(CustomFields):
 
 
 class DocumentCreator(Creator):
-    def createFromUri(self, polarion, project, uri):
+    def createFromUri(self, polarion, project, uri) -> Document: # TODO polarion and project types, circular import
         return Document(polarion, project, uri)

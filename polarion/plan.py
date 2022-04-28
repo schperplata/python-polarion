@@ -1,17 +1,24 @@
+import copy
+from datetime import datetime, date
+from typing import List, Optional
+
 from .factory import Creator
 from .workitem import Workitem
-import copy
 
-
+from .record import Record
 class Plan(object):
-    """
-    A polarion Plan
-    """
+    """ A polarion Plan"""
 
-    def __init__(self, polarion, project, polarion_record=None, uri=None, id=None, new_plan_name=None, new_plan_id=None, new_plan_parent=None,
-                 new_plan_template=None):
+    def __init__(self, polarion,
+                 project,
+                 polarion_record: Optional[Record] = None,
+                 uri: Optional[str] = None,
+                 id: Optional[str] = None,
+                 new_plan_name: Optional[str] = None,
+                 new_plan_id: Optional[str] = None,
+                 new_plan_parent: Optional[str] = None,
+                 new_plan_template: Optional[str] = None):  # TODO polarion and project types, polarion_record, circular import
         """
-
         :param polarion: Polarion client
         :param project: Polarion project
         :param polarion_record:
@@ -56,47 +63,42 @@ class Plan(object):
             raise Exception(f'Plan not retrieved from Polarion')
         self._original_polarion = copy.deepcopy(self._polarion_record)
 
-    def setDueDate(self, date):
-        """
-        Set the due date for this plan
+    def setDueDate(self, date: date):
+        """ Set the due date for this plan
+
         :param date: date object
-        :return: None
         """
         self.dueDate = date
         self.save()
 
-    def setStartDate(self, date):
-        """
-        Set the start date for this plan
+    def setStartDate(self, date: date):
+        """ Set the start date for this plan
+        
         :param date: date object
-        :return: None
         """
         self.startDate = date
         self.save()
 
-    def setFinishedOnDate(self, date):
-        """
-        Set the finished date for this plan
+    def setFinishedOnDate(self, date: date):
+        """ Set the finished date for this plan
+        
         :param date: date object
-        :return: None
         """
         self.finishedOn = date
         self.save()
 
-    def setStartedOnDate(self, date):
-        """
-        Set the started on date for this plan
+    def setStartedOnDate(self, date: date):
+        """Set the started on date for this plan
+        
         :param date: date object
-        :return: None
         """
         self.startedOn = date
         self.save()
 
     def addToPlan(self, workitem: Workitem):
-        """
-        Add a workitem to the plan
+        """Add a workitem to the plan
+        
         :param workitem: Workitem
-        :return: None
         """
         if any(x.id == workitem.type.id for x in self.allowedTypes.EnumOptionId):
             service = self._polarion.getService('Planning')
@@ -107,41 +109,38 @@ class Plan(object):
             raise Exception(f'Workitem type {workitem.id} is not allowed in this plan')
 
     def removeFromPlan(self, workitem: Workitem):
-        """
-        Remove a workitem from the plan
+        """Remove a workitem from the plan
+        
         :param workitem: Workitem
-        :return: None
         """
         service = self._polarion.getService('Planning')
         service.removePlanItems(self.uri, [workitem.uri])
         workitem._reloadFromPolarion()  # noqa: call private to reload from polarion so the plan status is updated
         self._reloadFromPolarion()
 
-    def addAllowedType(self, type):
-        """
-        Add an allowed workitem type to this plan
+    def addAllowedType(self, type: str):
+        """Add an allowed workitem type to this plan
+
         :param type: a string with the type name
-        :return: None
         """
         if any(x.id == type for x in self.allowedTypes.EnumOptionId) is False:
             service = self._polarion.getService('Planning')
             service.addPlanAllowedType(self.uri, self._polarion.EnumOptionIdType(id=type))
             self._reloadFromPolarion()
 
-    def removeAllowedType(self, type):
-        """
-        Remove an allowed workitem type to this plan
+    def removeAllowedType(self, type: str):
+        """Remove an allowed workitem type to this plan
+
         :param type: a string with the type name
-        :return: None
         """
         if any(x.id == type for x in self.allowedTypes.EnumOptionId) is True:
             service = self._polarion.getService('Planning')
             service.removePlanAllowedType(self.uri, self._polarion.EnumOptionIdType(id=type))
             self._reloadFromPolarion()
 
-    def getWorkitemsInPlan(self):
-        """
-        Get all workitems from this plan
+    def getWorkitemsInPlan(self) -> List[Workitem]:
+        """Get all workitems from this plan
+
         :return: Array of workitems
         """
         workitems = []
@@ -151,9 +150,7 @@ class Plan(object):
         return workitems
 
     def save(self):
-        """
-        Update the plan in polarion
-        """
+        """Update the plan in polarion"""
         updated_plan = {}
 
         for attr, value in self._polarion_record.__dict__.items():
@@ -168,16 +165,16 @@ class Plan(object):
             service.updatePlan(updated_plan)
             self._reloadFromPolarion()
 
-    def getParent(self):
-        """
-        Get the parent plan
+    def getParent(self) -> "Plan":
+        """Get the parent plan
+
         :return: parent Plan
         """
         return Plan(self._polarion, self._project, self.parent)
 
-    def getChildren(self):
-        """
-        Get the child plans
+    def getChildren(self) -> List["Plan"]:
+        """ Get the child plans
+        
         :return: List of Plans, or empty list if there are no children.
         """
         search_results = self._project.searchPlanFullItem(f'parent.id:{self.id}')
@@ -207,5 +204,5 @@ class Plan(object):
 
 
 class PlanCreator(Creator):
-    def createFromUri(self, polarion, project, uri):
+    def createFromUri(self, polarion, project, uri) -> Plan: # TODO polarion and project types, circular import
         return Plan(polarion, None, uri)

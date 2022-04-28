@@ -1,10 +1,10 @@
 import atexit
 import re
-from typing import Any, Dict, Optional
 from urllib.parse import urljoin, urlparse
 import requests
 from zeep import Client, Transport
 from zeep.plugins import HistoryPlugin
+from typing import Any, Dict, Optional
 
 from .project import Project
 
@@ -157,7 +157,7 @@ class Polarion(object):
             return True
         return False
 
-    def getService(self, name: str) -> str:
+    def getService(self, name: str) -> str:  # TODO service type?
         """
         Get a WSDL service client. The name can be 'Tracker' or 'Session'
         """
@@ -171,22 +171,21 @@ class Polarion(object):
         if name in self.services:
             return self.services[name]['client'].service
         else:
-            raise Exception('Service does not exsist')
+            raise Exception('Service does not exists')
 
-    def getTypeFromService(self, name: str, type_name: str) -> :
+    def getTypeFromService(self, name: str, type_name: str) -> str:  # TODO type name?
         """
         """
         if name in self.services:
             return self.services[name]['client'].get_type(type_name)
         else:
-            raise Exception('Service does not exsist')
+            raise Exception('Service does not exists')
 
     def getProject(self, project_id: str) -> Project:
         """Get a Polarion project
 
         :param project_id: The ID of the project.
         :return: The request project
-        :rtype: Project
         """
         return Project(self, project_id)
 

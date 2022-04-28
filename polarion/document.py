@@ -11,8 +11,8 @@ from .document import Document
 
 class Document(CustomFields):
     def __init__(self, polarion, project, uri: Optional[str] = None, location: Optional[str] = None): # TODO polarion and project types, circular import
-        """
-        Create a Document.
+        """Create a Document.
+        
         :param polarion: Polarion client object
         :param project: Polarion Project object
         :param uri: Polarion uri (first possibility to get a document)

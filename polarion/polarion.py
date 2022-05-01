@@ -128,6 +128,7 @@ class Polarion(object):
 
     def _getTypes(self):
         # TODO: check if the namespace is always the same
+        # TODO: type hinting + class instance variables defined outside __init__?
         self.EnumOptionIdType = self.getTypeFromService('TestManagement', 'ns3:EnumOptionId')
         self.TextType = self.getTypeFromService('TestManagement', 'ns1:Text')
         self.ArrayOfTestStepResultType = self.getTypeFromService('TestManagement', 'ns4:ArrayOfTestStepResult')
